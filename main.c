@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <inttypes.h>
-#include <stdbool.h>
+#include <malloc.h>
+
+#include "number_operations.h"
 
 
 char const *const INVALID_ARGUMENT_NUMBER_MESSAGE =
@@ -9,37 +11,8 @@ char const *const INVALID_ARGUMENT_NUMBER_MESSAGE =
 char const *const INVALID_INTEGER_ARGUMENT_MESSAGE =
         "Argument <%d> should be decimal number but was \"%s\"\n";
 
-
-bool TryCharToDigit(const char c, int32_t base, int32_t *digit) {
-    int32_t res;
-    if ('0' <= c && c <= '9')
-        res = c - '0';
-    else if ('a' <= c && c <= 'z')
-        res = c - 'a' + 10;
-    else if ('A' <= c && c <= 'Z')
-        res = c - 'A' + 10;
-    else
-        return false;
-
-    if (res >= base)
-        return false;
-
-    *digit = res;
-    return true;
-}
-
-bool TryParseInt(char const *str, int32_t base, int32_t *result) {
-    int32_t res = 0;
-    for (char const *cPtr = str; *cPtr; ++cPtr) {
-        int32_t digit;
-        if (!TryCharToDigit(*cPtr, base, &digit))
-            return false;
-        res = res * base + digit;
-    }
-
-    *result = res;
-    return true;
-}
+char const *const NAN_OR_WRONG_BASE_MESSAGE =
+        "<%s> is not a valid number of base %d\n";
 
 
 int main(int32_t argc, char *argv[]) {
@@ -51,15 +24,27 @@ int main(int32_t argc, char *argv[]) {
     int32_t fromBase;
     int32_t toBase;
 
-#define try_parse_int_arg(id, target) if (!TryParseInt(argv[(id)], 10, &(target))) { \
+#define try_parse_int_arg(id, target) { \
+    if (!TryParseInt(argv[(id)], 10, &(target))) { \
         printf(INVALID_INTEGER_ARGUMENT_MESSAGE, (id), argv[(id)]); \
         return 1; \
-    }
+    } \
+}
 
     try_parse_int_arg(1, fromBase);
     try_parse_int_arg(2, toBase);
 
 #undef try_parse_int_arg
+    char *const number = argv[3];
 
+    if (!IsCorrectNumberOfBase(number, fromBase)) {
+        printf(NAN_OR_WRONG_BASE_MESSAGE, number, fromBase);
+        return 1;
+    }
 
+    char * inNewBase = ConvertBase(number, fromBase, toBase);
+
+    printf("%s\n", inNewBase);
+
+    free(inNewBase);
 }
