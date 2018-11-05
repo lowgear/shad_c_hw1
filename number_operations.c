@@ -48,7 +48,8 @@ bool TryParseInt(char const *str, int32_t base, int32_t *result) {
         res = res * base + digit;
     }
 
-    *result = res;
+    if (result != NULL)
+        *result = res;
     return true;
 }
 

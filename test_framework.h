@@ -36,7 +36,7 @@ name##_class static_instance_##name; \
 \
 void name##_check(); \
 void name##_test() { \
-    printf("%s testing: ", #name); \
+    printf("%-70s: ", #name); \
     try { \
         name##_check(); \
     } \
