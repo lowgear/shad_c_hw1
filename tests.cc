@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <cstring>
+#include <cstdlib>
 #include "test_framework.h"
 
 extern "C" {
@@ -88,8 +89,127 @@ TEST(TryParseInt_ShouldReturnTrueOnCorrectInts) {
     ASSERT_TRUE(TryParseInt("12345", 10, nullptr))
 }
 
+TEST(TryParseInt_ShouldReturnTrueOnCorrectNegativeInts) {
+    ASSERT_TRUE(TryParseInt("-12345", 10, nullptr))
+}
+
 TEST(TryParseInt_ShouldGiveCorrectInts) {
     int32_t number;
     TryParseInt("12345", 10, &number);
     ASSERT_EQUAL(number, 12345)
+
+    TryParseInt("aB", 12, &number);
+    ASSERT_EQUAL(number, 131)
+}
+
+TEST(IsCorrectNumberOfBase_ShouldGiveTrueForCorrect) {
+    ASSERT_TRUE(IsCorrectNumberOfBase("1234", 5))
+    ASSERT_TRUE(IsCorrectNumberOfBase("1234ABcd", 14))
+}
+
+TEST(IsCorrectNumberOfBase_ShouldGiveTrueForCorrectSigned) {
+    ASSERT_TRUE(IsCorrectNumberOfBase("-1234", 5))
+    ASSERT_TRUE(IsCorrectNumberOfBase("+1234ABcd", 14))
+}
+
+TEST(IsCorrectNumberOfBase_ShouldGiveFalseForIncorrect) {
+    ASSERT_FALSE(IsCorrectNumberOfBase("1234", 3))
+    ASSERT_FALSE(IsCorrectNumberOfBase("1234ABcd", 7))
+}
+
+TEST(IsZero_ShouldReturnTrueForZero) {
+    ASSERT_TRUE(IsZero("0000000"));
+    ASSERT_TRUE(IsZero(""));
+}
+
+TEST(IsZero_ShouldReturnTrueForSignedZero) {
+    ASSERT_TRUE(IsZero("+0000000"));
+    ASSERT_TRUE(IsZero("-"));
+}
+
+TEST(IsZero_ShouldReturnFalseForNonZero) {
+    ASSERT_FALSE(IsZero("0000001"));
+    ASSERT_FALSE(IsZero("42"));
+    ASSERT_FALSE(IsZero("A"));
+}
+
+TEST(Divide_ShouldDivideCorrectly) {
+    char number[] = "123";
+    int32_t remainder;
+    Divide(number, 6, 10, &remainder);
+
+    int32_t parsed;
+    TryParseInt(number, 10, &parsed);
+    ASSERT_EQUAL(parsed, 20)
+    ASSERT_EQUAL(remainder, 3)
+}
+
+TEST(Divide_ShouldDivideNegativeCorrectly) {
+    char number[] = "-123";
+    int32_t remainder;
+
+    Divide(number, 6, 10, &remainder);
+
+    int32_t parsed;
+    TryParseInt(number, 10, &parsed);
+    ASSERT_EQUAL(parsed, -20)
+    ASSERT_EQUAL(remainder, -3)
+}
+
+#define TEST_CASE_CONVERT_BASE(num, from, to) \
+TEST(ConvertBase_ShouldConvertCorrectly_##num##_##from##_##to) { \
+    char number[] = #num; \
+    int32_t expected; \
+    TryParseInt(number, (from), &expected); \
+\
+    char* converted = ConvertBase(number, (from), (to)); \
+\
+    int32_t actual; \
+    TryParseInt(converted, (to), &actual); \
+    ASSERT_EQUAL(expected, actual) \
+\
+    free(converted); \
+}
+
+#define TEST_CASE_CONVERT_BASE_NEGATIVE(num, from, to) \
+TEST(ConvertBase_ShouldConvertNegativeCorrectly_##num##_##from##_##to) { \
+    char number[] = "-" #num; \
+    int32_t expected; \
+    TryParseInt(number, (from), &expected); \
+\
+    char* converted = ConvertBase(number, (from), (to)); \
+\
+    int32_t actual; \
+    TryParseInt(converted, (to), &actual); \
+    ASSERT_EQUAL(expected, actual) \
+\
+    free(converted); \
+}
+
+TEST_CASE_CONVERT_BASE(123, 10, 2)
+TEST_CASE_CONVERT_BASE(123, 7, 26)
+TEST_CASE_CONVERT_BASE_NEGATIVE(123, 7, 26)
+TEST_CASE_CONVERT_BASE_NEGATIVE(12aBc, 15, 2)
+
+TEST(SWAP_ShouldSwap) {
+    int orig_a = 13;
+    int orig_b = 42;
+
+    int a = orig_a;
+    int b = orig_b;
+
+    SWAP(int, a, b)
+
+    ASSERT_EQUAL(orig_a, b)
+    ASSERT_EQUAL(orig_b, a)
+}
+
+TEST(SWAP_ShouldNotChangeSingleVariable) {
+    int orig_a = 13;
+
+    int a = orig_a;
+
+    SWAP(int, a, a)
+
+    ASSERT_EQUAL(orig_a, a)
 }
