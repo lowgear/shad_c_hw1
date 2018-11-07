@@ -57,14 +57,29 @@ bool TryParseInt(char const *str, int32_t base, int32_t *result) {
     return true;
 }
 
-bool IsCorrectNumberOfBase(char const *number, int32_t base) {
+bool IsCorrectNumberOfBase(char const *number, int32_t base, bool *isFraction) {
     if (number[0] == '-' || number[0] == '+')
         ++number;
-    for (char const *c = number; *c; ++c) {
+    bool isFrac = false;
+    char const *c = number;
+    for (; *c; ++c) {
+        if (*c == '.') {
+            isFrac = true;
+            ++c;
+        }
         if (!TryCharToDigit(*c, base, NULL)) {
             return false;
         }
     }
+    if (isFrac)
+        for (; *c; ++c) {
+            if (!TryCharToDigit(*c, base, NULL)) {
+                return false;
+            }
+        }
+
+    if (isFraction != NULL)
+        *isFraction = isFrac;
     return true;
 }
 
@@ -91,10 +106,27 @@ void Divide(char *number, int32_t divider, int32_t base, int32_t *remaining) {
         *c = DigitToChar(r / divider);
         r %= divider;
     }
-    *remaining = r * (isNegative ? -1 : 1);
+
+    if (remaining != NULL)
+        *remaining = r * (isNegative ? -1 : 1);
 }
 
-char *ConvertBase(char *number, int32_t fromBase, int32_t toBase) {
+void Multiply(char *number, int32_t multiplier, int32_t base, int32_t *overflow) {
+    const size_t len = strlen(number);
+
+    int32_t over = 0;
+    for (int32_t i = len - 1; i >= 0; --i) {
+        int32_t d = CharToDigit(number[i]);
+        over = over + d * multiplier;
+        number[i] = DigitToChar(over % base);
+        over /= base;
+    }
+
+    if (overflow != NULL)
+        *overflow = over;
+}
+
+char *ConvertIntegerPart(char *number, int32_t fromBase, int32_t toBase) {
     const int32_t MAX_NUM_SIZE = 600;
     char *res = malloc(MAX_NUM_SIZE * sizeof(char));
     res[MAX_NUM_SIZE - 1] = '\0';
@@ -125,4 +157,50 @@ char *ConvertBase(char *number, int32_t fromBase, int32_t toBase) {
 
     ReverseStr(res);
     return res;
+}
+
+char *GetPointPtr(char *number) {
+    while (*number && *number != '.')
+        ++number;
+    return number;
+}
+
+char *ConvertFractionalPart(char *fractional, int32_t fromBase, int32_t toBase, int32_t digitsAfterPoint) {
+    char *result = malloc(sizeof(char) * (digitsAfterPoint + 1));
+
+    result[digitsAfterPoint] = '\0';
+    for (size_t i = 0; i < digitsAfterPoint; ++i) {
+        int32_t overflow;
+        Multiply(fractional, toBase, fromBase, &overflow);
+        result[i] = DigitToChar(overflow);
+    }
+
+    return result;
+}
+
+char *ConvertBaseFractional(char *number, int32_t fromBase, int32_t toBase, int32_t digitsAfterPoint) {
+    char *pointPtr = GetPointPtr(number);
+
+    *pointPtr = '\0';
+
+    char *integerPartConverted = ConvertIntegerPart(number, fromBase, toBase);
+
+    char *fractionalPartConverted = ConvertFractionalPart(pointPtr + 1, fromBase, toBase, digitsAfterPoint);
+
+    const size_t integerLen = strlen(integerPartConverted);
+    const size_t fractionalLen = strlen(fractionalPartConverted);
+    char *result = malloc(
+            sizeof(char) *
+            (integerLen
+             + fractionalLen)
+            + 2);
+
+    strcpy(result, integerPartConverted);
+    result[integerLen] = '.';
+    strcpy(result + integerLen + 1, fractionalPartConverted);
+
+    free(integerPartConverted);
+    free(fractionalPartConverted);
+
+    return result;
 }

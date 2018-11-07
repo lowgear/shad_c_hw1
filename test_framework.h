@@ -12,8 +12,8 @@ struct name##_class { \
     static void (*next)(); \
 \
     static void Run() { \
-        name##_test(); \
         next(); \
+        name##_test(); \
     } \
 \
     name##_class() { \

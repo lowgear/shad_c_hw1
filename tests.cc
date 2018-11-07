@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include "test_framework.h"
@@ -103,18 +103,18 @@ TEST(TryParseInt_ShouldGiveCorrectInts) {
 }
 
 TEST(IsCorrectNumberOfBase_ShouldGiveTrueForCorrect) {
-    ASSERT_TRUE(IsCorrectNumberOfBase("1234", 5))
-    ASSERT_TRUE(IsCorrectNumberOfBase("1234ABcd", 14))
+    ASSERT_TRUE(IsCorrectNumberOfBase("1234", 5, nullptr))
+    ASSERT_TRUE(IsCorrectNumberOfBase("1234ABcd", 14, nullptr))
 }
 
 TEST(IsCorrectNumberOfBase_ShouldGiveTrueForCorrectSigned) {
-    ASSERT_TRUE(IsCorrectNumberOfBase("-1234", 5))
-    ASSERT_TRUE(IsCorrectNumberOfBase("+1234ABcd", 14))
+    ASSERT_TRUE(IsCorrectNumberOfBase("-1234", 5, nullptr))
+    ASSERT_TRUE(IsCorrectNumberOfBase("+1234ABcd", 14, nullptr))
 }
 
 TEST(IsCorrectNumberOfBase_ShouldGiveFalseForIncorrect) {
-    ASSERT_FALSE(IsCorrectNumberOfBase("1234", 3))
-    ASSERT_FALSE(IsCorrectNumberOfBase("1234ABcd", 7))
+    ASSERT_FALSE(IsCorrectNumberOfBase("1234", 3, nullptr))
+    ASSERT_FALSE(IsCorrectNumberOfBase("1234ABcd", 7, nullptr))
 }
 
 TEST(IsZero_ShouldReturnTrueForZero) {
@@ -162,7 +162,7 @@ TEST(ConvertBase_ShouldConvertCorrectly_##num##_##from##_##to) { \
     int32_t expected; \
     TryParseInt(number, (from), &expected); \
 \
-    char* converted = ConvertBase(number, (from), (to)); \
+    char* converted = ConvertIntegerPart(number, (from), (to)); \
 \
     int32_t actual; \
     TryParseInt(converted, (to), &actual); \
@@ -177,7 +177,7 @@ TEST(ConvertBase_ShouldConvertNegativeCorrectly_##num##_##from##_##to) { \
     int32_t expected; \
     TryParseInt(number, (from), &expected); \
 \
-    char* converted = ConvertBase(number, (from), (to)); \
+    char* converted = ConvertIntegerPart(number, (from), (to)); \
 \
     int32_t actual; \
     TryParseInt(converted, (to), &actual); \
@@ -212,4 +212,78 @@ TEST(SWAP_ShouldNotChangeSingleVariable) {
     SWAP(int, a, a)
 
     ASSERT_EQUAL(orig_a, a)
+}
+
+TEST(IsCorrectNumberOfBase_ShouldSetFalseForIntegers) {
+    bool isFractional;
+    IsCorrectNumberOfBase("1234", 5, &isFractional);
+
+    ASSERT_FALSE(isFractional);
+}
+
+TEST(IsCorrectNumberOfBase_ShouldSetTrueForFractionals) {
+    bool isFractional;
+    IsCorrectNumberOfBase("-12.34", 5, &isFractional);
+
+    ASSERT_TRUE(isFractional);
+}
+
+TEST(Multiply_ShouldGiveCorrectOverflow) {
+    int32_t overflow;
+    char frac[] = "100";
+
+    Multiply(frac, 10, 2, &overflow);
+
+    ASSERT_EQUAL(overflow, 5);
+}
+
+TEST(Multiply_ShouldGiveCorrectOverflow_1) {
+    int32_t overflow;
+    char frac[] = "1";
+
+    Multiply(frac, 10, 2, &overflow);
+
+    ASSERT_EQUAL(overflow, 5);
+}
+
+int32_t ParseInt(const char *number, int32_t base) {
+    int32_t result;
+    TryParseInt(number, base, &result);
+    return result;
+}
+
+TEST(Multiply_ShouldMultiply) {
+    char frac[] = "0000011";
+
+    Multiply(frac, 10, 2, nullptr);
+
+    ASSERT_EQUAL(ParseInt(frac, 2), 30);
+}
+
+TEST(Multiply_ShouldMultiply_1) {
+    char frac[] = "0000123";
+
+    Multiply(frac, 5, 4, nullptr);
+
+    ASSERT_EQUAL(ParseInt(frac, 4), ParseInt("0000123", 4) * 5);
+}
+
+TEST(ConvertFractionalPart_ShouldConvertCorrectly) {
+    char number[] = "101";
+
+    char* result = ConvertFractionalPart(number, 2, 10, 3);
+
+    ASSERT_TRUE(strcmp(result, "625") == 0)
+
+    free(result);
+}
+
+TEST(ConvertBaseFractional_ShouldConvertCorrecly) {
+    char number[] = "+11.100";
+
+    char* result = ConvertBaseFractional(number, 2, 10, 3);
+
+    ASSERT_TRUE(strcmp(result, "+3.500") == 0)
+
+    free(result);
 }
