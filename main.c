@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <inttypes.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 #include "number_operations.h"
 
